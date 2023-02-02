@@ -1,10 +1,8 @@
 package com.example.tipecalc.ui.theme
 
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.*
 import java.text.NumberFormat
 
 class ScreenVieWModel : ViewModel() {
@@ -15,6 +13,17 @@ class ScreenVieWModel : ViewModel() {
     private val _tipPercentInput = MutableStateFlow(String())
     val tipPercentInput: StateFlow<String> = _tipPercentInput.asStateFlow()
 
+    private val _roundUp = MutableStateFlow(false)
+    val roundUp: StateFlow<Boolean> = _roundUp.asStateFlow()
+
+    val tip = combine(_amountInput, _tipPercentInput ,_roundUp) { amount, tipPercent, roundUp ->
+        var tip = tipPercent.toDouble() / 100 * amount.toDouble()
+        if (roundUp){
+            tip = kotlin.math.ceil(tip)
+        }
+        NumberFormat.getCurrencyInstance().format(tip)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, "0.00")
+
     fun setAmount(amount: String) {
         _amountInput.value = amount
     }
@@ -23,11 +32,9 @@ class ScreenVieWModel : ViewModel() {
         _tipPercentInput.value = tipPercent
     }
 
-    fun calculateTip(): String {
-        val amount = amountInput.value.toDoubleOrNull() ?: 0.0
-        val tipPercent = tipPercentInput.value.toDoubleOrNull() ?: 0.0
-        val tip = tipPercent / 100 * amount
-        return NumberFormat.getCurrencyInstance().format(tip)
+    fun setRoundUp(roundUp: Boolean) {
+        _roundUp.value = roundUp
     }
+    private fun String?.toDouble() = this?.toDoubleOrNull() ?: 0.0
 
 }
